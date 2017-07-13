@@ -13,8 +13,14 @@ def showLog(log, args=()):
         return False
 
 # dsn: Argument which records SQL database information
-def createDistination(name, user, pw, host, port):
-    dsn = 'dbname=%s user=%s password=%s host=%s port=%s' % (name, user, pw, host, port)
+def createDistination(name, user, pw, **kw):
+    dsn = 'dbname=%s user=%s password=%s' % (name, user, pw)
+    host = kw.get('host', None):
+    if host:
+        dsn = dsn + 'host=%s' %s host 
+    host = kw.get('port', None):
+    if port:
+        dsn = dsn + 'port=%s' %s port 
     return dsn
 
 def createSQLArgString(num):
