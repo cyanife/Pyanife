@@ -34,23 +34,23 @@ async def createPool(dsn, loop, **kw):
         maxsize = kw.get('maxsize', 10)
     ) 
 
-async select(sql, args, size=None):
+async def select(sql, args, size=None):
     showLog(sql)
     global __pool
     async with __pool.acquire() as conn:
         try:
-        async with conn.cursor() as cur:
-            await cur.execute(sql.replace('?', '%s'), args or ())
-            if size:
-                res = await cur.fenchmany(size)
-            else:
-                res = await cur.fenchall()
-        logging.info('rows: %s', len(res))
+            async with conn.cursor() as cur:
+                await cur.execute(sql.replace('?', '%s'), args or ())
+                if size:
+                    res = await cur.fenchmany(size)
+                else:
+                    res = await cur.fenchall()
+            logging.info('rows: %s', len(res))
         except BaseException as e:
             raise # exception position
     return res
 
-async execute(sql, args):
+async def execute(sql, args):
     showlog(sql)
     async with __pool.acquire() as conn:
         try:
@@ -81,13 +81,13 @@ class floatField(baseField):
     def __init__(self, name=None, isprimarykey=False, default_value=0.00):
         super.__init__(name, 'double precision', isprimarykey, default_value)
 
-class boolField(baseField):
+class boolenField(baseField):
     def __init__(self, name=None, default_value=False):
         super.__init__(name, 'boolean', False, default_value)
 
-class varcharField(baseField):
+class stringField(baseField):
     def __init__(self, name=None, isprimarykey=False, default_value=None, length=100):
-        super.__init__(name, 'varchar(%s)' % num, isprimarykey, default_value)
+        super.__init__(name, 'varchar(%s)' % length, isprimarykey, default_value)
 
 class textField(baseField):
     def __init__(self, name=None, default_value=None):
@@ -118,19 +118,19 @@ class modelMeta(type):
                 raise # empty primarykey
             for k in mappings.keys():
                 attrs.pop(k)
-            escaped_fields = list(map(lambda f: '`%s`' % f,fields))
+            escaped_fields = list(map(lambda f: '"%s"' % f,fields))
             # SQL operation statement
             attrs['__table__'] = tablename
             attrs['__mapping__'] = mappings
             attrs['__primarykey__'] = primarykey 
             attrs['__fields__'] = fields
-            attrs['__select__'] = 'select `%s`, %s from `%s`' % (primaryKey, ', '.join(escaped_fields), tableName)
-            attrs['__insert__'] = 'insert into `%s` (%s, `%s`) values (%s)' % (tablename, ', '.join(escaped_fields), primaryKey, createSQLArgString(len(escaped_fields) + 1))
-            attrs['__update__'] = 'update `%s` set %s where `%s`=?' % (tablename, ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primarykey)
-            attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tablename, primarykey)
+            attrs['__select__'] = 'select "%s", %s from "%s"' % (primaryKey, ', '.join(escaped_fields), tableName)
+            attrs['__insert__'] = 'insert into "%s" (%s, "%s") values (%s)' % (tablename, ', '.join(escaped_fields), primaryKey, createSQLArgString(len(escaped_fields) + 1))
+            attrs['__update__'] = 'update "%s" set %s where "%s"=?' % (tablename, ', '.join(map(lambda f: '"%s"=?' % (mappings.get(f).name or f), fields)), primarykey)
+            attrs['__delete__'] = 'delete from "%s" where "%s"=?' % (tablename, primarykey)
             return type.__new__(cls, name, bases, attrs)
 
-class modelBase(dict, Metaclass=modelMeta):
+class modelBase(dict, metaclass=modelMeta):
     def __init__(self, **kw):
         super(modelBase, self).__init__(**kw)
     
@@ -167,7 +167,7 @@ class modelBase(dict, Metaclass=modelMeta):
         orderBy = kw.get('orderBy', None)
         if orderBy:
             sql.append('order by')
-            sql.append(order by)
+            sql.append(orderBy)
         limit = kw.get('limit', None)
         if limit is not None:
             sql.append('limit')
@@ -184,7 +184,7 @@ class modelBase(dict, Metaclass=modelMeta):
 
     @classmethod
     async def findNumber(cls, selectField, where=None, args=None):
-        sql = ['select %s _num_ from `%s`' % (selectField, cls.__table__)]
+        sql = ['select %s _num_ from "%s"' % (selectField, cls.__table__)]
         if where:
             sql.append('where')
             sql.append(where)
@@ -196,7 +196,7 @@ class modelBase(dict, Metaclass=modelMeta):
     # find object by primarykey 
     @classmethod
     async def find(cls, primarykey):
-        res = await select('%s where `%s`=?' % (cls.__select__, cls.__primarykey__), [primarykey], 1)
+        res = await select('%s where "%s"=?' % (cls.__select__, cls.__primarykey__), [primarykey], 1)
         if len(res) == 0:
             return None
         return cls(**rs[0])

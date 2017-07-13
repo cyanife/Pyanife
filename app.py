@@ -6,7 +6,7 @@ import asyncio, os, json, time
 
 import logging; logging.basicConfig(level=logging.INFO)
 
-def index(request):
+async def index(request):
     return web.Response(body=b'<h1> Awesome </h1>', content_type='text/html')
 
 async def init(loop): # async 替代 @asyncio.coroutine装饰器,代表这个是要异步运行的函数
