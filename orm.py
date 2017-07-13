@@ -15,12 +15,12 @@ def showLog(log, args=()):
 # dsn: Argument which records SQL database information
 def createDistination(name, user, pw, **kw):
     dsn = 'dbname=%s user=%s password=%s' % (name, user, pw)
-    host = kw.get('host', None):
+    host = kw.get('host', None)
     if host:
-        dsn = dsn + 'host=%s' %s host 
-    host = kw.get('port', None):
+        dsn = dsn + 'host=%s' % host 
+    host = kw.get('port', None)
     if port:
-        dsn = dsn + 'port=%s' %s port 
+        dsn = dsn + 'port=%s' % port 
     return dsn
 
 def createSQLArgString(num):
@@ -70,34 +70,34 @@ async def execute(sql, args):
 # Database column field attribute
 class baseField(object):
 
-    def __init__(self, name, data_type, isprimarykey, default_value):
+    def __init__(self, name, data_type, isprimarykey, default):
         self.name = name
         self.data_type = data_type
         self.isprimarykey = isprimarykey
-        self.default_value = default_value
+        self.default = default
 
     def __str__(self):
         return '<%s, %s:%s>' % (self.__class__.__name__, self.data_type, self.name)
 
 class integerField(baseField):
-    def __init__(self, name=None, isprimarykey=False, default_value=0):
-        super.__init__(name, 'bigint', isprimarykey, default_value)
+    def __init__(self, name=None, isprimarykey=False, default=0):
+        super().__init__(name, 'bigint', isprimarykey, default)
 
 class floatField(baseField):
-    def __init__(self, name=None, isprimarykey=False, default_value=0.00):
-        super.__init__(name, 'double precision', isprimarykey, default_value)
+    def __init__(self, name=None, isprimarykey=False, default=0.00):
+        super().__init__(name, 'double precision', isprimarykey, default)
 
 class boolenField(baseField):
-    def __init__(self, name=None, default_value=False):
-        super.__init__(name, 'boolean', False, default_value)
+    def __init__(self, name=None, default=False):
+        super().__init__(name, 'boolean', False, default)
 
 class stringField(baseField):
-    def __init__(self, name=None, isprimarykey=False, default_value=None, length=100):
-        super.__init__(name, 'varchar(%s)' % length, isprimarykey, default_value)
+    def __init__(self, name=None, isprimarykey=False, default=None, length=100):
+        super().__init__(name, 'varchar(%s)' % length, isprimarykey, default)
 
 class textField(baseField):
-    def __init__(self, name=None, default_value=None):
-        super.__init__(name, 'text', default_value)
+    def __init__(self, name=None, default=None):
+        super().__init__(name, 'text',False, default)
 
 
 # Metaclass to verify mappings from model to SQL table and generate class.
@@ -111,30 +111,30 @@ class modelMeta(type):
         primarykey = None
         mappings = dict()
         for k,v in attrs.items():
-            if isinstance(v, field):
+            if isinstance(v, baseField):
                 logging.info('map %s to %s' % (k, v))
                 mappings[k] = v
                 if v.isprimarykey:
                     if primarykey:
-                        raise # Duplicate primarykey
+                        raise StandardError('Duplicated primary key: %s' % k)# empty primarykey
                     primarykey = k
                 else:
                     fields.append(k)
-            if not primarykey:
-                raise # empty primarykey
-            for k in mappings.keys():
-                attrs.pop(k)
-            escaped_fields = list(map(lambda f: '"%s"' % f,fields))
-            # SQL operation statement
-            attrs['__table__'] = tablename
-            attrs['__mapping__'] = mappings
-            attrs['__primarykey__'] = primarykey 
-            attrs['__fields__'] = fields
-            attrs['__select__'] = 'select "%s", %s from "%s"' % (primaryKey, ', '.join(escaped_fields), tableName)
-            attrs['__insert__'] = 'insert into "%s" (%s, "%s") values (%s)' % (tablename, ', '.join(escaped_fields), primaryKey, createSQLArgString(len(escaped_fields) + 1))
-            attrs['__update__'] = 'update "%s" set %s where "%s"=?' % (tablename, ', '.join(map(lambda f: '"%s"=?' % (mappings.get(f).name or f), fields)), primarykey)
-            attrs['__delete__'] = 'delete from "%s" where "%s"=?' % (tablename, primarykey)
-            return type.__new__(cls, name, bases, attrs)
+        if not primarykey:
+            raise StandardError('Primary key not found!')
+        for k in mappings.keys():
+            attrs.pop(k)
+        escaped_fields = list(map(lambda f: '"%s"' % f,fields))
+        # SQL operation statement
+        attrs['__table__'] = tablename
+        attrs['__mapping__'] = mappings
+        attrs['__primarykey__'] = primarykey 
+        attrs['__fields__'] = fields
+        attrs['__select__'] = 'select "%s", %s from "%s"' % (primaryKey, ', '.join(escaped_fields), tableName)
+        attrs['__insert__'] = 'insert into "%s" (%s, "%s") values (%s)' % (tablename, ', '.join(escaped_fields), primaryKey, createSQLArgString(len(escaped_fields) + 1))
+        attrs['__update__'] = 'update "%s" set %s where "%s"=?' % (tablename, ', '.join(map(lambda f: '"%s"=?' % (mappings.get(f).name or f), fields)), primarykey)
+        attrs['__delete__'] = 'delete from "%s" where "%s"=?' % (tablename, primarykey)
+        return type.__new__(cls, name, bases, attrs)
 
 class modelBase(dict, metaclass=modelMeta):
     def __init__(self, **kw):
