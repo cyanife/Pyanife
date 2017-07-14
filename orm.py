@@ -13,15 +13,28 @@ def showLog(log, args=()):
         return False
 
 # dsn: Argument which records SQL database information
-def createDistination(name, user, pw, **kw):
-    dsn = 'dbname=%s user=%s password=%s' % (name, user, pw)
-    host = kw.get('host', None)
-    if host:
-        dsn = dsn + 'host=%s' % host 
-    host = kw.get('port', None)
-    if port:
-        dsn = dsn + 'port=%s' % port 
-    return dsn
+
+# def createDistination(name, user, pw, **kw):
+#     dsn = 'dbname=%s user=%s password=%s' % (name, user, pw)
+#     host = kw.get('host', None)
+#     if host:
+#         dsn = dsn + 'host=%s' % host 
+#     port = kw.get('port', None)
+#     if port:
+#         dsn = dsn + 'port=%s' % port 
+#     return dsn
+
+def createDistination(configs):
+    db = configs.get('db',None)
+    if not db:
+        raise ValueError('Config Error!')
+    dsn = list()
+    for key, value in db.items():
+        if value:
+            dsn.append(key+'='+str(value))
+    return ' '.join(dsn) 
+
+
 
 def createSQLArgString(num):
     L=list()
@@ -106,7 +119,7 @@ class modelMeta(type):
     def __new__(cls, name, bases, attrs):
         if name == 'modelBase':
             return type.__new__(cls, name, bases, attrs)
-        tablename = attrs.get('__tablename__', None) or name
+        tablename = attrs.get('__table__', None) or name
         fields = list()
         primarykey = None
         mappings = dict()
@@ -127,11 +140,11 @@ class modelMeta(type):
         escaped_fields = list(map(lambda f: '"%s"' % f,fields))
         # SQL operation statement
         attrs['__table__'] = tablename
-        attrs['__mapping__'] = mappings
+        attrs['__mappings__'] = mappings
         attrs['__primarykey__'] = primarykey 
         attrs['__fields__'] = fields
-        attrs['__select__'] = 'select "%s", %s from "%s"' % (primaryKey, ', '.join(escaped_fields), tableName)
-        attrs['__insert__'] = 'insert into "%s" (%s, "%s") values (%s)' % (tablename, ', '.join(escaped_fields), primaryKey, createSQLArgString(len(escaped_fields) + 1))
+        attrs['__select__'] = 'select "%s", %s from "%s"' % (primarykey, ', '.join(escaped_fields), tablename)
+        attrs['__insert__'] = 'insert into "%s" (%s, "%s") values (%s)' % (tablename, ', '.join(escaped_fields), primarykey, createSQLArgString(len(escaped_fields) + 1))
         attrs['__update__'] = 'update "%s" set %s where "%s"=?' % (tablename, ', '.join(map(lambda f: '"%s"=?' % (mappings.get(f).name or f), fields)), primarykey)
         attrs['__delete__'] = 'delete from "%s" where "%s"=?' % (tablename, primarykey)
         return type.__new__(cls, name, bases, attrs)
@@ -162,6 +175,7 @@ class modelBase(dict, metaclass=modelMeta):
                 setattr(self, key, value)
         return value
 
+    # register find functions as classmethod
     @classmethod
     async def findAll(cls, where=None, args=None, **kw):
         sql = [cls.__select__]

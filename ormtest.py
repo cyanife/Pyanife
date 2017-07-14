@@ -1,5 +1,5 @@
 import orm
-from sqlmodels import blogModel, commentModel
+from sqlmodels import blog, comment
 
 def test():
    dst = orm.createDistination(name='pyanife', user='"user_pyanife"', pw='w7aw1314')
