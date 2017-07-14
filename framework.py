@@ -12,7 +12,7 @@ from urllib import parse
 def get(route):
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kw)
+        def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__method__ = 'GET'
         wrapper.__route__ = route 
@@ -22,7 +22,7 @@ def get(route):
 def post(route):
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kw)
+        def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__method__ = 'POST'
         wrapper.__route__ = route 
@@ -66,7 +66,7 @@ class requestHandler(object):
         self.func = func
         self.parameter = parameterCheck(func)
 
-    async __call__(self, request):
+    async def __call__(self, request):
         kw = None
 
         if self.parameter.get('need_varkw') or self.parameter.get('need_kw') or self.parameter.get('need_request'):

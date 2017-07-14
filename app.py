@@ -34,11 +34,11 @@ def init_jinja2(app, **kw):
     # add filters (bar|foo pipe functions in template) 
     filters = kw.get('filters', None)
     if filters is not None:
-        for name, f in filters.items()
+        for name, f in filters.items():
             env.filters[name] = f
     app['__templating__'] = env
 
-async response_factory(app, handler):
+async def response_factory(app, handler):
     async def response(request):
         # first get response
         res = await handler(request)
@@ -89,7 +89,7 @@ async response_factory(app, handler):
 
 
 # app init
-async init(loop):
+async def init(loop):
     # create sql connection pool
     await orm.createPool(orm.createDistination(configs),loop)
     app = web.application(loop=loop, middlewares=[response_factory])
