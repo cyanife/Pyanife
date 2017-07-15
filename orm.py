@@ -193,7 +193,7 @@ class modelBase(dict, metaclass=modelMeta):
             args = list() 
         orderBy = kw.get('orderBy', None)
         if orderBy:
-            sql.append('orderby')
+            sql.append('order by')
             sql.append(orderBy)
         limit = kw.get('limit', None)
         if limit is not None:
@@ -201,11 +201,22 @@ class modelBase(dict, metaclass=modelMeta):
             if isinstance(limit, int):
                 sql.append('?')
                 args.append(limit)
-            elif isinstance(limit, tuple) and len(limit) == 2:
-                sql.append('?,?')
-                args.extend(limit)
+            # elif isinstance(limit, tuple) and len(limit) == 2:
+            #     sql.append('?,?')
+            #     args.extend(limit)
             else:
                 raise ValueError('Invalid limit value: %s' % str(limit))
+        offset = kw.get('offset', None)
+        if offset is not None:
+            sql.append('offset')
+            if isinstance(offset, int):
+                sql.append('?')
+                args.append(offset)
+            # elif isinstance(limit, tuple) and len(limit) == 2:
+            #     sql.append('?,?')
+            #     args.extend(limit)
+            else:
+                raise ValueError('Invalid offset value: %s' % str(offset))
         res = await select(' '.join(sql), args)
         return [cls(**r) for r in res]
 
@@ -216,9 +227,9 @@ class modelBase(dict, metaclass=modelMeta):
             sql.append('where')
             sql.append(where)
         res = await select(' '.join(sql), args, 1)
-        if len(rs) == 0:
+        if len(res) == 0:
             return None
-        return rs[0]['_num_']
+        return res[0]['_num_']
 
     # find object by primarykey 
     @classmethod
@@ -226,7 +237,7 @@ class modelBase(dict, metaclass=modelMeta):
         res = await select('%s where "%s"=?' % (cls.__select__, cls.__primarykey__), [primarykey], 1)
         if len(res) == 0:
             return None
-        return cls(**rs[0])
+        return cls(**res[0])
 
     async def save(self):
         args = list(map(self.getValueOrDefault, self.__fields__))

@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-import asyncio
+import logging; logging.basicConfig(level=logging.INFO)
+import asyncio, json, hashlib, base64
 import time
 
-from framework import get, post
+from aiohttp import web
 
-from models import guid, blog, comment
+from framework import get, post
+from models import guid, blog, comment, admin
+
+from config import configs
+from exceptions import * 
 
 @get('/')
 async def index(request):
@@ -20,21 +24,106 @@ async def index(request):
 
 # Page split caculator
 class pageSplitter(object):
+    def __init__(self, item_count, page_index=1, page_size=2):
+        self.item_count = item_count
+        self.page_size = page_size
+        self.page_count = item_count // page_size + (1 if item_count % page_size >0 else 0)
+        # If out of range, display nothing 
+        if (item_count == 0) or (page_index > self.page_count) or (page_index < 1):
+            self.page_index = 1
+            self.offset = 0
+            self.limit = 0
+        else:
+            self.page_index = page_index
+            # offset calc
+            self.offset = self.page_size * (page_index - 1)
+            self.limit = self.page_size
+        self.has_next_page = self.page_index < self.page_count
+        self.has_previous_page = self.page_index > 1 
 
-    def __init__(self, count, page):
-        pass
+    def __str__(self):
+        return 'item_count: %s, page_count: %s, page_index: %s, page_size: %s, offset: %s, limit: %s' % (self.item_count, self.page_count, self.page_index, self.page_size, self.offset, self.limit)
 
+    __repr__ = __str__
 
-# blog index page
+    # when page index has some problems, auto go to page 1
+    @classmethod
+    def str2index(self,page_str):
+        try:
+            i = int(page_str)
+        except:
+            i = 1
+        if i < 1:
+            i = 1
+        return i
+
+# cookie generator
+# generate as format: id-expiresat-hash
+_COOKIE_SALT = configs['session']['salt']
+def cookieGen(admin, validtime):
+    expiresat = str(int(time.time() + validtime))
+    h = '%s-%s-%s-%s' % (admin.id, admin.passwd, expiresat, _COOKIE_SALT)
+    cookie = '-'.join([admin.id, expires, hashlib.sha1(h.encode('utf-8')).hexdigest()])
+    return cookie
+
+# cookie checker
+async def cookiechk(cookie):
+    if not cookie:
+        return None
+    try:
+        cookie_list = cookie.split('-')
+        if len(cookie_list) != 3:
+            return None
+        id, expiresat, hash = cookie_list
+        if int(expiresat) < time.time():
+            return None
+        admin = await admin.find(id)
+        if admin is None:
+            return None
+        h = '%s-%s-%s-%s' % (id, admin.passwd, expiresat, _COOKIE_SALT)
+        if hash != hashlib.sha1(h.encode('utf-8')).hexdigest():
+            logging.info('invalid hash')
+            return None
+        admin.passwd = '*'
+        return admin
+    except Exception as e:
+        logging.exceptions(e)
+        return None
+
+# # blog index page
+# @get('/blog')
+# async def blogindex(*, page='1'):
+#     page_index = pageSplitter.str2index(page) 
+#     count = await blog.findNumber('count(id)')
+#     logging.info('count: %s' % count)
+#     ps = pageSplitter(count, page_index)
+#     if count == 0:
+#         blogs = list()
+#     else:
+#         # use pageSplitter to fetch results
+#         blogs = await blog.findAll(orderBy='timestamp desc', limit=ps.limit, offset=ps.offset)
+#     return {
+#         '__template__': 'blogs.html',
+#         'page' : ps,
+#         'blogs': blogs
+#     }
+
+# Blog index page
 @get('/blog')
-def blogindex(request):
-    summary = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
-    blogs = [
-        blog(id='1', name='Test Blog', timestamp=time.time()-120),
-        blog(id='2', name='Something New', timestamp=time.time()-3600),
-        blog(id='3', name='Learn Swift', timestamp=time.time()-7200)
-    ]
+async def blogindex(* , query='', p='1'):
+    page_index = pageSplitter.str2index(p) 
+    count = await blog.findNumber('count(id)')
+    logging.info('count: %s' % count)
+    ps = pageSplitter(count, page_index)
+    if count == 0:
+        blogs = list()
+    else:
+        # use pageSplitter to fetch results
+        blogs = await blog.findAll(orderBy='timestamp desc', limit=ps.limit, offset=ps.offset)
+        pager = {'total': ps.item_count, 'limit':ps.limit, 'page': ps.page_index}
     return {
         '__template__': 'blogs.html',
+        'p' : pager,
+        'query' : query,
         'blogs': blogs
     }

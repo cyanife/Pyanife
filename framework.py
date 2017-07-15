@@ -41,8 +41,8 @@ def parameterCheck(func):
     for name, param in sign.parameters.items():
         if param.kind == inspect.Parameter.KEYWORD_ONLY:
             if param.default == inspect.Parameter.empty:
-                required_param.add(name)
-            kw_param.add(name)
+                required_param.append(name)
+            kw_param.append(name)
         elif param.kind == inspect.Parameter.VAR_KEYWORD:
             need_varkw_param = True
 
