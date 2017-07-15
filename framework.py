@@ -3,6 +3,7 @@
 
 import asyncio, functools
 import inspect
+import os
 
 from aiohttp import web
 
@@ -57,6 +58,7 @@ def parameterCheck(func):
     param_dict['need_kw'] = need_kw_param 
     param_dict['need_varkw'] = need_varkw_param 
     param_dict['need_request'] =  need_request_param
+    return param_dict
 
 # A callable handler get function's parameters from request
 class requestHandler(object):
@@ -92,9 +94,9 @@ class requestHandler(object):
                     kw[k] = v[0]
         if not kw:
             kw = dict(**request.match_info)
-        elif not self.parameter['need_varkw'] and self.parameter['kw']:
+        elif not self.parameter.get('need_varkw') and self.parameter.get('kw'):
             res =dict()
-            for name in self.parameter['kw']:
+            for name in self.parameter.get('kw'):
                 if name in kw:
                     res[name] = kw[name]
             kw = res
@@ -102,11 +104,11 @@ class requestHandler(object):
             if k in kw:
                 logging.warning('Duplicate arg name in named arg and kw args: %s' % k) 
             kw[k] = v
-        if self.parameter['need_request']:
+        if self.parameter.get('need_request'):
             kw['request'] = request
         
-        if self.parameter['required']:
-            for name in self.parameter['requierd']:
+        if self.parameter.get('required', None):
+            for name in self.parameter.get('requierd'):
                 if name not in kw:
                     return web.HTTPBadRequest('Missing Parameter :%s' % name)
         try:

@@ -1,14 +1,17 @@
-import orm
-from sqlmodels import blog, comment
+import logging; logging.basicConfig(level=logging.INFO)
+from sqlmodel import blog, comment
+import orm,asyncio
+from config import configs
 
-def test():
-   dst = orm.createDistination(name='pyanife', user='"user_pyanife"', pw='w7aw1314')
+async def test(loop):
 
-   yield from orm.createPool(dsn)
+    dst=orm.createDistination(configs)
+    await orm.createPool(dst,loop=loop)
+    b = blog(name='test',content='hello')
+    await b.save()
+    blogs = await blog.findAll()
+    print(blogs)
 
-   b = blog(name='Test', content='HELLO')
-
-   yield from blog.save()
-
-for x in test():
-    pass
+loop = asyncio.get_event_loop()
+loop.run_until_complete(test(loop))
+loop.close()

@@ -4,6 +4,8 @@
 import asyncio, aiopg
 import logging
 
+from psycopg2.extras import RealDictCursor
+
 # SQL log function
 def showLog(log, args=()):
     try:
@@ -58,26 +60,31 @@ async def select(sql, args, size=None):
     global __pool
     async with __pool.acquire() as conn:
         try:
-            async with conn.cursor() as cur:
+            async with conn.cursor(cursor_factory = RealDictCursor) as cur:
                 await cur.execute(sql.replace('?', '%s'), args or ())
                 if size:
-                    res = await cur.fenchmany(size)
+                    res = await cur.fetchmany(size)
                 else:
-                    res = await cur.fenchall()
+                    res = await cur.fetchall()
+            cur.close()
             logging.info('rows: %s', len(res))
         except BaseException as e:
             raise # exception position
+            cur.close()
+    print(res)
     return res
 
 async def execute(sql, args):
-    showlog(sql)
+    showLog(sql)
     async with __pool.acquire() as conn:
         try:
             async with conn.cursor() as cur:
                 await cur.execute(sql.replace('?', '%s'), args)
                 modded = cur.rowcount
+                cur.close()
         except BaseException as e:
             raise # exception position
+            cur.close()
     return modded 
 
 # Database column field attribute
@@ -134,7 +141,7 @@ class modelMeta(type):
                 else:
                     fields.append(k)
         if not primarykey:
-            raise StandardError('Primary key not found!')
+            raise RuntimeError('Primary key not found!')
         for k in mappings.keys():
             attrs.pop(k)
         escaped_fields = list(map(lambda f: '"%s"' % f,fields))
@@ -186,7 +193,7 @@ class modelBase(dict, metaclass=modelMeta):
             args = list() 
         orderBy = kw.get('orderBy', None)
         if orderBy:
-            sql.append('order by')
+            sql.append('orderby')
             sql.append(orderBy)
         limit = kw.get('limit', None)
         if limit is not None:
@@ -195,7 +202,7 @@ class modelBase(dict, metaclass=modelMeta):
                 sql.append('?')
                 args.append(limit)
             elif isinstance(limit, tuple) and len(limit) == 2:
-                sql.append('?, ?')
+                sql.append('?,?')
                 args.extend(limit)
             else:
                 raise ValueError('Invalid limit value: %s' % str(limit))

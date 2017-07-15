@@ -30,3 +30,10 @@ class comment(modelBase):
     name = stringField(length=100)
     content = textField()
     timestamp = floatField(default=time.time)
+
+class admin(modelBase):
+    __table__ = 'admins'
+
+    id = stringField(isprimarykey=True, default=guid, length = 32)
+    name = stringField(length=100)
+    passwd = stringField(length=50)

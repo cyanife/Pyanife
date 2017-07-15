@@ -38,10 +38,19 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
+# logger for debug
+async def logger_factory(app, handler): 
+    async def logger(request):
+        logging.info('Requst : %s, %s' % (request.method, request.path))
+        return (await handler(request))
+    return logger
+
 async def response_factory(app, handler):
     async def response(request):
+        logging.info('Response handler...')
         # first get response
         res = await handler(request)
+        logging.info('res = %s' % str(res))
         # if response is bytes:
         if isinstance(res, web.StreamResponse):
             resp = web.Response(body=res)
@@ -69,6 +78,7 @@ async def response_factory(app, handler):
                 # use template
                 resp = web.Response(body=app['__templating__'].get_template(res.get('__template__')).render(**res).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
+                return resp
         # if response is int
         if isinstance(res, int):
             if res >=100 and res < 600:
@@ -92,7 +102,7 @@ async def response_factory(app, handler):
 async def init(loop):
     # create sql connection pool
     await orm.createPool(orm.createDistination(configs),loop)
-    app = web.application(loop=loop, middlewares=[response_factory])
+    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
     init_jinja2(app)
     add_static(app)
     add_routes(app, 'handlers')

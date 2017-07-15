@@ -3,7 +3,7 @@
 
 import asyncio
 
-form framwork import get, post
+from framework import get, post
 
 from sqlmodel import guid, blog, comment
 
@@ -12,5 +12,5 @@ async def index(request):
     blogs = await blog.findAll()
     return { 
         '__template__' : 'test.html',
-        'blogs' = blogs
+        'blogs' : blogs
         }

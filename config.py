@@ -3,7 +3,7 @@ configs = {
         'host': 'localhost',
         'port': '',
         'user': 'user_pyanife',
-        'password': 'w7aw1314',
-        'name': 'pyanife'
+        'password': '1011',
+        'dbname': 'pyanife'
     }
 }
