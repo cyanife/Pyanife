@@ -1,5 +1,5 @@
 import logging; logging.basicConfig(level=logging.INFO)
-from sqlmodel import blog, comment
+from models import blog, comment
 import orm,asyncio
 from config import configs
 

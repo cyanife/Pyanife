@@ -3,6 +3,7 @@
 
 import logging; logging.basicConfig(level=logging.INFO)
 import asyncio, os, json, time
+from datetime import datetime
 
 from aiohttp import web
 from jinja2 import Environment, FileSystemLoader
@@ -38,6 +39,12 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
+# convert unix timestamp to date/time string, jinja filter
+def datetime_filter(ts):
+    dt = datetime.fromtimestamp(ts)
+    return dt.strftime("%d %b, %Y")
+
+
 # logger for debug
 async def logger_factory(app, handler): 
     async def logger(request):
@@ -51,8 +58,11 @@ async def response_factory(app, handler):
         # first get response
         res = await handler(request)
         logging.info('res = %s' % str(res))
-        # if response is bytes:
+        # if response is web.StreamResponse:
         if isinstance(res, web.StreamResponse):
+            return res
+        # if response is bytes:
+        if isinstance(res, bytes):
             resp = web.Response(body=res)
             resp.content_type = 'application/octet-stream'
             return resp
@@ -90,7 +100,6 @@ async def response_factory(app, handler):
             # is http condition code and message
             if isinstance(n, int):
                 return web.Response(status=n, text=str(m))
-        
         # default: response as string
         resp = web.Response(body=str(res).encode('utf-8'))
         resp.content_type = 'text/plain;charset=utf-8'
@@ -103,7 +112,7 @@ async def init(loop):
     # create sql connection pool
     await orm.createPool(orm.createDistination(configs),loop)
     app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
-    init_jinja2(app)
+    init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_static(app)
     add_routes(app, 'handlers')
     srv = await loop.create_server(app.make_handler(), '127.0.0.1', 5000)

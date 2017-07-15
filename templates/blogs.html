@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Blog{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .post-index-title {
+        font-variant: small-caps;
+        text-align: center;
+        margin: 15px auto;
+    }
+    .post-index-title>h1 {
+        margin: 0 auto;
+    }
+    .post-item {
+        margin-bottom: 10px;
+        background-color: #f5f5f5;
+        padding: 10px 15px;
+    }
+    .post-item-title {
+        margin: 0 auto;
+        font-size: 1.5em;
+    }
+    .post-item-title>a {
+        text-decoration: none;
+        color: inherit;
+    }
+    .post-item-meta {
+        margin: 10px 0 auto;
+        font-size: 0.9em;
+    }
+    .post-item-time {
+        text-align: right;
+        color: #777;
+    }
+    .pager li>a {
+        border-radius: 0;
+    }
+    .pager .previous>a {
+        color: inherit;
+        width: 50%;
+    }
+    .pager .next>a {
+        color: inherit;
+        width: 50%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="post-index-title">
+        <h1>{% block index %}Posts{% endblock %}</h1>
+    </div>
+    {% for blog in blogs %}
+        <div class="post-item">
+            <div class="post-item-title">
+                <a href="/blog/{{ blog.id }}">{{blog.name}}</a>
+            </div>
+            <div class="post-item-meta">
+                <div class="post-item-time">
+                    {{ blog.timestamp|datetime }}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

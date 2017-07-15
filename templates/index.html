@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block extrastyle%}
+<style>
+    .aboutme {
+        margin: 100px auto;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block navlist%}
+                <li><a href="/blog">BLOGS</a></li>
+                <li><a href="/images">IMAGES</a></li>
+{% endblock %}
+
+{% block content%}
+<div class="aboutme">
+    <h1>Yifeng CHU</h1>
+    <p>Born in 1989, China</p>
+    <p>Lives in Kyoto, Japan</p>
+    <p>A curious engineering student and developer</p>
+    <ul class="icons">
+          <li><a href="http://www.linkedin.com/in/yifeng-chu-7a3a4192/" class="fa fa-linkedin"></a></li>
+          <li><a href="https://github.com/cyanife/" class="fa fa-github"></a></li>
+          <li><a href="https://www.facebook.com/realplease" class="fa fa-facebook"></a></li>
+          <li><a href="mailto:cyanife@gmail.com" class="fa fa-envelope-o"></a></li>
+    </ul>
+</div>
+{% endblock %}
