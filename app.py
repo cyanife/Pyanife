@@ -2,11 +2,11 @@
 # coding=utf8
 
 import logging; logging.basicConfig(level=logging.INFO)
-import asyncio, os, json, time
+import asyncio, os, json, time, re
 from datetime import datetime
 
 from aiohttp import web
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, evalcontextfilter, Markup, escape
 
 import orm
 from config import configs
@@ -39,11 +39,33 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
-# convert unix timestamp to date/time string, jinja filter
-def datetime_filter(ts):
+# convert unix timestamp to date string, jinja filter
+def date_filter(ts):
     dt = datetime.fromtimestamp(ts)
     return dt.strftime("%d %b, %Y")
 
+# convert unix timestamp to date/time string, jinja filter
+def datetime_filter(ts):
+    dt = datetime.fromtimestamp(ts)
+    return dt.strftime("%d. %b, %Y, %I:%M %p")
+
+#  pluralizer, jinja filter 
+
+def pluralize_filter(number, singular = '', plural = 's'):
+    if number == 1:
+        return singular
+    else:
+        return plural
+
+# line breaker(make | to <br/>i), jinja filter
+@evalcontextfilter
+def linebreaks_filter(eval_ctx, value):
+    """Converts newlines into <p> and <br />s."""
+    value = re.sub(r'\r\n|\r|\n', '\n', value) # normalize newlines
+    paras = re.split('\n{2,}', value)
+    paras = [u'<p>%s</p>' % p.replace('\n', '<br />') for p in paras]
+    paras = u'\n\n'.join(paras)
+    return Markup(paras)
 
 # logger for debug
 async def logger_factory(app, handler): 
@@ -112,7 +134,7 @@ async def init(loop):
     # create sql connection pool
     await orm.createPool(orm.createDistination(configs),loop)
     app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
-    init_jinja2(app, filters=dict(datetime=datetime_filter))
+    init_jinja2(app, filters=dict(date=date_filter, datetime=datetime_filter, pluralize=pluralize_filter, linebreaks=linebreaks_filter))
     add_static(app)
     add_routes(app, 'handlers')
     srv = await loop.create_server(app.make_handler(), '127.0.0.1', 5000)

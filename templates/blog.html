@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}{{ blog.name }}{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .post-article-title {
+        font-variant: small-caps;
+        text-align: center;
+        margin: 15px auto;
+    }
+    .post-article-title>h1 {
+        margin: 0 auto;
+    }
+    .post-article-meta {
+        margin: 0 auto;
+        color: #777;
+    }
+    .post-article-meta a {
+        color: #777;
+    }
+    .post-article-content {
+        margin: 10px auto;
+        font-size: 19px;
+        font-weight: 100;
+        line-height: 30px;
+        text-align: justify;
+        color: #2f2f2f;
+    }
+    .post-article-content img {
+        max-width: 100%;
+    }
+    .post-comment-form {
+        margin-bottom: 20px;
+    }
+    #reply-indicator {
+        display: none;
+    }
+    @media(min-width: 992px) {
+        .form-group>input {
+            width: 40%;
+        }
+    }
+    @media(min-width: 768px) and (max-width: 991px) {
+        .form-group>input {
+            width: 60%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+<script src="/static/js/angular.min.js"></script>
+<script>
+
+    var comment_url = '/api/blogs/{{ blog.id }}/comments';
+    angular.module("formExample",[])
+    .controller('formController', ['$scope','$http', function($scope, $http){
+        $scope.submitform =function(comm){
+            console.log("POST");
+            $http.post(comment_url,JSON.stringify(comm)).then(function(){location.reload();},function(){alert("Failed");});
+        };
+    }]);
+
+
+
+</script>
+{% endblock %}
+
+
+{% block content %}
+    <div class="post-article-title">
+        <h1>{{blog.name}}</h1>
+    </div>
+    <div class="post-article-meta">
+        <span class="glyphicon glyphicon-time"></span>&nbsp;{{blog.timestamp|date}}&nbsp;
+        <span class="glyphicon glyphicon-comment"></span>&nbsp;{{comments|length}} comment{{comments|length|pluralize}}&nbsp;
+    </div>
+    <div class="post-article-content">
+        {{ blog.html_content|safe }}
+    </div>
+
+    <hr>
+    <div class="media-list" id="comments">
+        {% for comment in comments %}
+        <div class="media" id="comment-{{comment.id}}">
+            <div class="media-body">
+                <h4 class="media-heading">
+                    {% if comment.user_website %}
+                    <a href="{{comment.user_website}}" rel="external nofollow">{{comment.user_name}}</a>
+                    {% else %}
+                    {{comment.user_name}}
+                    {% endif %}
+                    <small>{{comment.timestamp|datetime}} </small>
+                </h4>
+                {{comment.content|linebreaks}}
+            </div>
+        </div>
+        <hr>
+        {% endfor %}
+    </div>
+    <div id="comment-section" ng-app="formExample" ng-controller="formController">
+        <div id="comment-indicator" class="page-header">
+            <h3>Leave a Comment</h3>
+        </div>
+        <form class="post-comment-form" id="comment" action=#>
+            <div class="form-group">
+                <input class="form-control" type="text" id="name" placeholder="Name(required)" ng-model="comm.user_name" required />
+            </div>
+            <div class="form-group">
+                <input class="form-control" type="email" id="email" placeholder="Email(required)" ng-model="comm.user_email" required />
+            </div>
+            <div class="form-group">
+                <input class="form-control" type="url" id="website" placeholder="Website" ng-model="comm.user_website" />
+            </div>
+            <div class="form-group">
+                <textarea class="form-control" id="content" rows="5" placeholder="Comment" ng-model="comm.content"></textarea>
+            </div>
+            <br />
+            <input type="submit" ng-click="submitform(comm)" value="Post comment">
+        </form> 
+    </div>
+
+{% endblock %}
+
+

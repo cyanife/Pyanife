@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import logging
 import asyncio, functools
 import inspect
 import os
+import json
 
 from aiohttp import web
 
@@ -76,9 +77,9 @@ class requestHandler(object):
                 if not request.content_type:
                     return web.HTTPBadRequest('Missing Content-Type!')
                 cont = request.content_type.lower()
-                if cont.startwith('application/json'):
+                if cont.startswith('application/json'):
                     params = await request.json()
-                    if not isinstance(params. dict):
+                    if not isinstance(params, dict):
                         return  web.HTTPBadRequest('JSON ERROR!')
                     kw = params
                 elif cont.startswith('application/x-www-form-urlencoded') or cont.startswith('multipart/form-data'):
@@ -112,7 +113,9 @@ class requestHandler(object):
                 if name not in kw:
                     return web.HTTPBadRequest('Missing Parameter :%s' % name)
         try:
+            logging.info(kw)
             result = await self.func(**kw)
+            logging.info('handler result:%s'%result)
             return result
         except:
             pass

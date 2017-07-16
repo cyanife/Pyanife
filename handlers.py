@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import logging; logging.basicConfig(level=logging.INFO)
-import asyncio, json, hashlib, base64
+import asyncio, json, hashlib, base64, re
 import time
+import markdown
 
 from aiohttp import web
 
 from framework import get, post
-from models import guid, blog, comment, admin
+from models import guid, Blog, Comment, Admin
 
 from config import configs
 from exceptions import * 
+
+_RE_EMAIL = re.compile(r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$')
+_COOKIE_SALT = configs['session']['salt']
 
 @get('/')
 async def index(request):
@@ -59,7 +63,7 @@ class pageSplitter(object):
 
 # cookie generator
 # generate as format: id-expiresat-hash
-_COOKIE_SALT = configs['session']['salt']
+
 def cookieGen(admin, validtime):
     expiresat = str(int(time.time() + validtime))
     h = '%s-%s-%s-%s' % (admin.id, admin.passwd, expiresat, _COOKIE_SALT)
@@ -77,7 +81,7 @@ async def cookiechk(cookie):
         id, expiresat, hash = cookie_list
         if int(expiresat) < time.time():
             return None
-        admin = await admin.find(id)
+        admin = await Admin.find(id)
         if admin is None:
             return None
         h = '%s-%s-%s-%s' % (id, admin.passwd, expiresat, _COOKIE_SALT)
@@ -110,20 +114,46 @@ async def cookiechk(cookie):
 
 # Blog index page
 @get('/blog')
-async def blogindex(* , query='', p='1'):
+async def blogindex(* , p='1'):
     page_index = pageSplitter.str2index(p) 
-    count = await blog.findNumber('count(id)')
+    count = await Blog.findNumber('count(id)')
     logging.info('count: %s' % count)
     ps = pageSplitter(count, page_index)
     if count == 0:
         blogs = list()
     else:
         # use pageSplitter to fetch results
-        blogs = await blog.findAll(orderBy='timestamp desc', limit=ps.limit, offset=ps.offset)
+        blogs = await Blog.findAll(orderBy='timestamp desc', limit=ps.limit, offset=ps.offset)
         pager = {'total': ps.item_count, 'limit':ps.limit, 'page': ps.page_index}
     return {
         '__template__': 'blogs.html',
-        'p' : pager,
-        'query' : query,
+        'page' : pager,
         'blogs': blogs
     }
+
+# get blog by id
+@get('/blog/{id}')
+async def get_blog(id):
+    blog = await Blog.find(id)
+    blog.html_content = markdown.markdown(blog.content)
+    comments = await Comment.findAll('blog_id=?', [id], orderBy='timestamp desc')
+    return {
+        '__template__' : 'blog.html',
+        'blog' : blog,
+        'comments' : comments
+}
+
+# create comment api
+@post('/api/blogs/{id}/comments')
+async def api_create_comment(*,id, user_name, user_email, user_website=None, content):
+    if (user_name is None) or (user_email is None) or (content.strip() is None):
+        raise APIValueError('requied value is missing')
+    if not _RE_EMAIL.match(user_email):
+        raise APIValueError('Email address is invalid')
+    blog = await Blog.find(id)
+    if blog is None:
+        raise APINotFountError('blog is missing id:%s'%id)
+    comment = Comment(blog_id = id, user_name = user_name, user_email=user_email,user_website=user_website,content=content.strip())
+    await comment.save()
+    return comment
+    

@@ -59,11 +59,11 @@
             </div>
             <div class="post-item-meta">
                 <div class="post-item-time">
-                    {{ blog.timestamp|datetime }}
+                    {{ blog.timestamp|date }}
                 </div>
             </div>
         </div>
     {% endfor %}
     {% import "blocks.html" as blocks %}
-    {{blocks.pager('/blog?query='+query, p.total, p.limit, p.page)}}
+    {{blocks.pager('/blog', page.total, page.limit, page.page)}}
 {% endblock %}

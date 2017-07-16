@@ -11,7 +11,7 @@ def guid():
     id = '%015d%s' % (int(time.time()*1000), uuid4().hex)
     return md5(id.encode('utf-8')).hexdigest()
 
-class blog(modelBase):
+class Blog(modelBase):
     __table__ = 'blogs'
 
     id = stringField(isprimarykey=True, default=guid, length=32)
@@ -19,7 +19,7 @@ class blog(modelBase):
     content = textField()
     timestamp = floatField(default=time.time)
 
-class comment(modelBase):
+class Comment(modelBase):
     __table__ = 'comments'
 
     id = stringField(isprimarykey=True, default=guid, length=32)
@@ -30,7 +30,7 @@ class comment(modelBase):
     content = textField()
     timestamp = floatField(default=time.time)
 
-class admin(modelBase):
+class Admin(modelBase):
     __table__ = 'admins'
 
     id = stringField(isprimarykey=True, default=guid, length=32)
