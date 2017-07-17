@@ -1,0 +1,115 @@
+{% extends "manage_base.html" %}
+
+{% block extrahead %}
+<script src="/static/js/angular.min.js"></script>
+<script src="/static/js/ui-bootstrap-tpls-2.5.0.js"></script>
+<script>
+    var comment_url = '/api/comments';
+    var app = angular.module('commApp', ['ui.bootstrap']);
+
+    //     angular.module("commApp",[])
+    app.controller('commController', ['$scope', '$http', function ($scope, $http) {
+
+        $scope.page = { 'total': 10, 'limit': 10, 'page': 1 };
+        $scope.currentPage = 1;
+
+        //        $http({
+        //                         url: comment_url,
+        //                         method: "GET",
+        //                         params: {p: $scope.currentPage}
+        //                 }).then(function(response) {
+        //                         $scope.status = response.status;
+        //                         $scope.comments = response.data.comments;
+        //                         $scope.page = response.data.page
+        //                         $scope.currentPage = $scope.page.page
+        //                        }, function(response) {
+
+        //                 }); 
+
+        $scope.$watch('currentPage + page.total', function () {
+            console.log("GET COMMENTS");
+            $http({
+                url: comment_url,
+                method: "GET",
+                params: { p: $scope.currentPage }
+            }).then(function (response) {
+                $scope.status = response.status;
+                $scope.comments = response.data.comments;
+                $scope.page = response.data.page
+                $scope.currentPage = $scope.page.page
+            }, function (response) {
+                $scope.comments = response.data.comments || 'Request failed';
+                $scope.status = response.status;
+            });
+        });
+
+        $scope.delete_comment = function (comment) {
+            var preview = comment.content.length > 20 ? comment.content.substring(0, 20) + '...' : comment.content;
+            if (confirm('Are you sure to delete comment: ' + preview + '?')) {
+                var delete_url = '/api/comments/' + comment.id + '/delete';
+                // console.log(delete_url);
+                $http.post(delete_url, JSON.stringify({ id: comment.id }))
+                    .then(function (response) {
+                        console.log(response);
+                        if (response.data.result === 'removed') {
+                            alert('Successfully deleted.');
+                            // location.reload();
+                            $scope.page.total--;
+
+                        };
+                    }, function () {
+                        alert('Failed');
+                    }
+                    );
+            };
+
+
+        };
+
+    }]);
+
+</script>
+{% endblock %}
+
+{% block extrastyle %}
+<style>
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div ng-app="commApp" ng-controller="commController">
+        <table class="table" >
+            <thead>
+                <tr>
+                    <th class="col-md-2" >Author</th>
+                    <th class="col-md-7" >Content</th>
+                    <th class="col-md-2" >Time</th>
+                    <th class="col-md-1" >OP</th>
+                </tr>
+            </thead>
+            <tbody ng-repeat = "comment in comments">
+                <tr>
+                    <td class="col-md-2">
+                        {%raw%}{{comment.user_name}}{%endraw%}
+                    </td>
+                    <td class="col-md-7">
+                        {%raw%}{{comment.content}}{%endraw%}
+                    </td>
+                    <td class="col-md-2">
+                        {%raw%}{{comment.timestamp|date:format:short}}{%endraw%}
+                    </td>
+                    <td class="col-md-1">
+                       {%raw%}<a href="#" ng-click="delete_comment(comment)"><span class="glyphicon glyphicon-trash"></span></a>
+                        {%endraw%}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="text-center">
+        <ul class="pagination" style="display:inline-block" uib-pagination ng-model="currentPage" total-items="page.total" items-per-page="page.limit" boundary-links="true"></ul>
+        </div>
+    </div>
+
+{% endblock %}

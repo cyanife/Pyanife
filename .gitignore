@@ -1,0 +1,17 @@
+# windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+#
+ormtest.py
+.vscode/

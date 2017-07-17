@@ -131,6 +131,7 @@ class modelMeta(type):
         primarykey = None
         mappings = dict()
         for k,v in attrs.items():
+            # choose field attributes ,put to field list
             if isinstance(v, baseField):
                 logging.info('map %s to %s' % (k, v))
                 mappings[k] = v
@@ -143,6 +144,7 @@ class modelMeta(type):
         if not primarykey:
             raise RuntimeError('Primary key not found!')
         for k in mappings.keys():
+            # Pop field attributes(field attrs are logical attrs)
             attrs.pop(k)
         escaped_fields = list(map(lambda f: '"%s"' % f,fields))
         # SQL operation statement
@@ -156,6 +158,7 @@ class modelMeta(type):
         attrs['__delete__'] = 'delete from "%s" where "%s"=?' % (tablename, primarykey)
         return type.__new__(cls, name, bases, attrs)
 
+# model base class, has SQL execution funcs
 class modelBase(dict, metaclass=modelMeta):
     def __init__(self, **kw):
         super(modelBase, self).__init__(**kw)
@@ -172,6 +175,7 @@ class modelBase(dict, metaclass=modelMeta):
     def getValue(self, key):
         return getattr(self, key, None)
 
+    # if default is callable, call it
     def getValueOrDefault(self, key):
         value = getattr(self, key, None)
         if value is None:
@@ -182,7 +186,7 @@ class modelBase(dict, metaclass=modelMeta):
                 setattr(self, key, value)
         return value
 
-    # register find functions as classmethod
+    # register find functions as classmethod, return objects
     @classmethod
     async def findAll(cls, where=None, args=None, **kw):
         sql = [cls.__select__]
@@ -248,13 +252,13 @@ class modelBase(dict, metaclass=modelMeta):
 
     async def update(self):
         args = list(map(self.getValue, self.__fields__))
-        args.append(self.getValue(self.__primary_key__))
+        args.append(self.getValue(self.__primarykey__))
         res = await execute(self.__update__, args)
         if res != 1:
             logging.warn('failed to update : affected rows: %s' % res)
 
     async def remove(self):
-        args = [self.getValue(self.__primary_key__)]
+        args = [self.getValue(self.__primarykey__)]
         res = await execute(self.__delete__, args)
         if res != 1:
             logging.warn('failed to remove: affected rows: %s' % res)

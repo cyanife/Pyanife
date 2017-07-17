@@ -1,0 +1,63 @@
+{% extends "manage_base.html" %}
+{% block extrastyle %}
+<style>
+    .artical-title-input {
+        margin: 15px auto;
+        font-size: 26px;
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+<script src="/static/js/angular.min.js"></script>
+<script>
+
+    var 
+        ID = '{{ id }}',
+        url = '{{ api }}';
+
+    angular.module("editApp",[])
+    .controller('editController', ['$scope','$http', function($scope, $http){
+        $scope.blog = {name : '', content: ''};
+        if(ID){
+            api = '/api/blogs/' + ID
+            $http.get(api).then(
+                function(response){
+                    $scope.blog.name = response.data.name;
+                    $scope.blog.content = response.data.content
+                },function(){}
+            );
+            url = url.replace(/{id}/,ID);
+        }
+        $scope.submitblog =function(blog){
+            console.log("POST");
+            console.log(url)
+            if(confirm("Are you sure to POST this artical?")){
+            $http.post(url,JSON.stringify(blog)).then(function(){location.assign("/manage/blogs");},function(){alert("Failed");});
+            }
+        };
+    }]);
+
+
+
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div class="artical-title-input" ng-app="editApp" ng-controller="editController">
+    <form role="form">
+        <div class="form-group">
+            <input class="form-control" type="text" ng-model="blog.name" placeholder="Blog Title" required />
+        </div>
+        <div class="form-group"> 
+            <textarea class="form-control" ng-model="blog.content"></textarea>
+        </div>
+        <br />
+        <input type='submit' class="btn btn-default" ng-click="submitblog(blog)" value="Publish">
+    </form>
+</div>    
+
+
+
+{% endblock %}

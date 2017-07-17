@@ -47,7 +47,10 @@
         }
     </style>
 {% endblock %}
-
+{% block navlist%}
+                <li><a href="/blog">BLOGS</a></li>
+                <li><a href="/images">IMAGES</a></li>
+{% endblock %}
 {% block content %}
     <div class="post-index-title">
         <h1>{% block index %}Posts{% endblock %}</h1>

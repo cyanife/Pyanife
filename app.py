@@ -12,6 +12,8 @@ import orm
 from config import configs
 
 from framework import add_route, add_routes, add_static
+from handlers import cookiechk, COOKIE_NAME
+from models import Admin
 
 # jinja2 init function
 def init_jinja2(app, **kw):
@@ -74,6 +76,30 @@ async def logger_factory(app, handler):
         return (await handler(request))
     return logger
 
+# authentication justify
+async def auth_factory(app, handler):
+    async def auth(request):
+        logging.info('check admin: %s, %s' % (request.method,request.path))
+        request.__admin__ =None
+        cookie_str = request.cookies.get(COOKIE_NAME)
+        logging.info('cookie: %s'%cookie_str)
+        if cookie_str:
+            admin = await cookiechk(cookie_str)
+            logging.info('admin: %s'% admin)
+            logging.info('req: %s'% request.__admin__)
+            if isinstance(admin, Admin):
+                logging.info('Cunrrent admin: %s'%admin.name)
+                request.__admin__ = admin
+        if request.path.startswith('/manage/') and (request.__admin__ is None):
+            # if not sign in, goto signin page
+            return web.HTTPFound('/signin')
+        return (await handler(request))
+    return auth
+
+
+
+
+# handle response
 async def response_factory(app, handler):
     async def response(request):
         logging.info('Response handler...')
@@ -133,7 +159,7 @@ async def response_factory(app, handler):
 async def init(loop):
     # create sql connection pool
     await orm.createPool(orm.createDistination(configs),loop)
-    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
+    app = web.Application(loop=loop, middlewares=[logger_factory, auth_factory, response_factory])
     init_jinja2(app, filters=dict(date=date_filter, datetime=datetime_filter, pluralize=pluralize_filter, linebreaks=linebreaks_filter))
     add_static(app)
     add_routes(app, 'handlers')

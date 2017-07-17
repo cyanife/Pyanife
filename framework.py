@@ -21,6 +21,7 @@ def get(route):
         return wrapper
     return decorator
 
+# @post decorator
 def post(route):
     def decorator(func):
         @functools.wraps(func)
@@ -34,10 +35,16 @@ def post(route):
 def parameterCheck(func):
     param_dict = dict()
     sign = inspect.signature(func)
+    # pick (*, kw) without default value 
     required_param = list()
+    # pick (*, kw) with default
     kw_param = list()
+    # has a kw param?
     need_kw_param = False
+    # has a varkw(**kw)?
     need_varkw_param = False
+    # has a (request =)? 
+    # TIP: request must be the last kw parameter(forced, to prevent error)
     need_request_param = False
     for name, param in sign.parameters.items():
         if param.kind == inspect.Parameter.KEYWORD_ONLY:
@@ -73,6 +80,7 @@ class requestHandler(object):
         kw = None
 
         if self.parameter.get('need_varkw') or self.parameter.get('need_kw') or self.parameter.get('need_request'):
+            # recognize POST content and grab parameters
             if request.method == 'POST':
                 if not request.content_type:
                     return web.HTTPBadRequest('Missing Content-Type!')
@@ -83,6 +91,7 @@ class requestHandler(object):
                         return  web.HTTPBadRequest('JSON ERROR!')
                     kw = params
                 elif cont.startswith('application/x-www-form-urlencoded') or cont.startswith('multipart/form-data'):
+                    # TIPS: request.post() is a courotine!
                     params = await request.post() 
                     kw = dict(**params)
                 else:
@@ -93,10 +102,12 @@ class requestHandler(object):
                 kw = dict()
                 for k, v in parse.parse_qs(qs, True).items():
                     kw[k] = v[0]
+        # if kw is empty, use request.match_info
         if not kw:
             kw = dict(**request.match_info)
         elif not self.parameter.get('need_varkw') and self.parameter.get('kw'):
             res =dict()
+            # delete unnecessary params
             for name in self.parameter.get('kw'):
                 if name in kw:
                     res[name] = kw[name]
@@ -114,6 +125,7 @@ class requestHandler(object):
                     return web.HTTPBadRequest('Missing Parameter :%s' % name)
         try:
             logging.info(kw)
+            # give kw to func, get response
             result = await self.func(**kw)
             logging.info('handler result:%s'%result)
             return result
