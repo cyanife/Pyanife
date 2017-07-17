@@ -41,7 +41,7 @@
     var blog_url= '/api/blogs';
     var app = angular.module('blogApp', ['ui.bootstrap']);
 
-    app.controller('blogController', ['$scope', '$http', function ($scope, $http) {
+    app.controller('blogController', ['$scope', '$http','$filter', function ($scope, $http) {
 
         $scope.page = { 'total': 10, 'limit': 10, 'page': 1 };
         $scope.currentPage = 1;
@@ -108,7 +108,7 @@
                     <a href="#" ng-click="delete_blog(blog)">DELETE</a>
                 </div>
                 <div class="post-item-time">
-                    {{ blog.timestamp|date:format:short }}
+                    {{ blog.timestamp * 1000|date:"short" }}
                 </div>
             </div>
         </div>

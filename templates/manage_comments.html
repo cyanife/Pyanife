@@ -98,7 +98,7 @@
                         {%raw%}{{comment.content}}{%endraw%}
                     </td>
                     <td class="col-md-2">
-                        {%raw%}{{comment.timestamp|date:format:short}}{%endraw%}
+                        {%raw%}{{comment.timestamp*1000|date:"short"}}{%endraw%}
                     </td>
                     <td class="col-md-1">
                        {%raw%}<a href="#" ng-click="delete_comment(comment)"><span class="glyphicon glyphicon-trash"></span></a>
