@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import logging; logging.basicConfig(level=logging.INFO)
-import asyncio, json, hashlib, base64, re
+import asyncio, json, hashlib, base64, re, json
 import time
 import markdown
 
@@ -325,3 +325,13 @@ def manage_edit_blog(id):
         'id': id,
         'api': '/api/blogs/{id}/modify'
 }
+
+
+#############
+# Image silde
+#############
+@get('/images')
+def get_images():
+    return { 
+        '__template__': 'images.html',
+    }

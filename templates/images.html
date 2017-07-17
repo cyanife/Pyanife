@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block extrastyle%}
+<style>
+    .photoalbum {
+        margin: 100px auto;
+        text-align: center;
+    }
+
+</style>
+{% endblock %}
+{% block extrahead %}
+<script src="/static/js/angular.min.js"></script>
+<script>
+
+    angular.module("imgApp",[])
+    .controller('imgController', ['$scope','$http', function($scope, $http){
+            url = '/static/images/images.json';
+            $http.get(url).then(
+                function(response){
+                    console.log(response.data.images);
+                    $scope.images = response.data.images;
+                },function(){}
+            );
+        }
+    ]);
+
+
+
+</script>
+
+{% endblock %}
+
+{% block navlist%}
+                <li><a href="/blog">BLOGS</a></li>
+                <li><a href="/images">IMAGES</a></li>
+{% endblock %}
+
+{% block content %}
+{%raw%}
+<div class="photoalbum" ng-app="imgApp" ng-controller="imgController">
+<div id="images" class="carousel slide" data-ride="carousel">
+  <ol class="carousel-indicators">
+    <li data-target="#images" data-slide-to="{{$index}}" ng-repeat="image in images" ng-class="{'active': $index == 0}"></li>
+  </ol>
+  <div class="carousel-inner" role="listbox">
+
+    <div ng-repeat="image in images" ng-class="{'item active': $index == 0, 'item': $index > 0}">
+    <div class="item">
+      <img src="/static/images/{{image.image}}" alt="{{image.Description}}" class="img-responsive">
+      <div class="carousel-caption">
+        <h3>{{image.Description}}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+{%endraw%}
+{% endblock %}

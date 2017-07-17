@@ -76,12 +76,12 @@ import hashlib
 #     comments = await Comment.findAll(orderBy='timestamp desc', limit=ps.limit,offset= ps.offset)
 #     return dict(page=pager, comments=comments)
 
-async def delete_comment(id):
-    comm = await Comment.find(id)
-    if comm is None:
-        raise APINotFountError('comment, id:%s'%id)
-    await comm.remove()
-    return dict(id=id,result='removed')
+# async def delete_comment(id):
+#     comm = await Comment.find(id)
+#     if comm is None:
+#         raise APINotFountError('comment, id:%s'%id)
+#     await comm.remove()
+#     return dict(id=id,result='removed')
 
 async def test(loop):
 
@@ -113,9 +113,9 @@ async def test(loop):
     # res = await  api_comments(p='1')
     # print(res['comments'])
 
-    id = '36fe935167a56ca5228d2f558317939e'
-    res = await delete_comment(id=id)
-    print(res)
+    # id = '36fe935167a56ca5228d2f558317939e'
+    # res = await delete_comment(id=id)
+    # print(res)
 
 
 
